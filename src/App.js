@@ -54,8 +54,6 @@ const COLOR_TO_FACE = { W: 'U', R: 'R', G: 'F', Y: 'D', O: 'L', B: 'B' };
 const CUBEJS_FACE_ORDER = ['U', 'R', 'F', 'D', 'L', 'B'];
 // our UI face keys in the net
 const UI_FACE_ORDER_FOR_RENDER = ['up', 'right', 'front', 'down', 'left', 'back'];
-// mapping between UI names and cubejs face letters (centers define faces)
-const UI_TO_CUBEJS_FACE = { up: 'U', right: 'R', front: 'F', down: 'D', left: 'L', back: 'B' };
 const CUBEJS_TO_UI_FACE = { U: 'up', R: 'right', F: 'front', D: 'down', L: 'left', B: 'back' };
 
 // solved UI state
@@ -161,7 +159,7 @@ function App() {
       initialCubeStringRef.current = cubeString;
 
       const cube = Cube.fromString(cubeString);
-      const sol = cube.solve();           // returns e.g., "U R U' L F2 ..."
+      const sol = cube.solve();         // returns e.g., "U R U' L F2 ..."
       const moves = sol ? sol.trim().split(/\s+/) : [];
 
       // Prepare animation cube that will be advanced one move at a time
@@ -180,9 +178,9 @@ function App() {
 
   // Convert inverse of a single move (for Prev button)
   const invertMove = (m) => {
-    if (m.endsWith("2")) return m;               // double move is its own inverse
+    if (m.endsWith("2")) return m;           // double move is its own inverse
     if (m.endsWith("'")) return m.slice(0, -1);  // X' -> X
-    return m + "'";                              // X -> X'
+    return m + "'";                           // X -> X'
   };
 
   const syncAnimStateFromCube = () => {
