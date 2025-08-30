@@ -47,16 +47,13 @@ const STYLES = `
   .error-message { color: #F8D7DA; font-weight: bold; margin-top: 10px; min-height: 20px; }
 `;
 
-// --- Canonical color/face mapping (stick to cubejs expectations) ---
+// --- Canonical color/face mapping ---
 const FACE_TO_COLOR = { U: 'W', R: 'R', F: 'G', D: 'Y', L: 'O', B: 'B' };
 const COLOR_TO_FACE = { W: 'U', R: 'R', G: 'F', Y: 'D', O: 'L', B: 'B' };
-// cubejs face order (and within each face, row-major 0..8)
 const CUBEJS_FACE_ORDER = ['U', 'R', 'F', 'D', 'L', 'B'];
-// our UI face keys in the net
 const UI_FACE_ORDER_FOR_RENDER = ['up', 'right', 'front', 'down', 'left', 'back'];
 const CUBEJS_TO_UI_FACE = { U: 'up', R: 'right', F: 'front', D: 'down', L: 'left', B: 'back' };
 
-// solved UI state
 const SOLVED_CUBE_STATE = {
   up:    Array(9).fill('W'),
   right: Array(9).fill('R'),
@@ -66,9 +63,7 @@ const SOLVED_CUBE_STATE = {
   back:  Array(9).fill('B'),
 };
 
-// --- Helpers: convert between UI state and cubejs string ---
-
-// UI -> cubejs 54-char string (URFDLB, each face row-major)
+// --- Helpers ---
 function uiStateToCubeString(uiState) {
   return CUBEJS_FACE_ORDER
     .map(face => {
@@ -78,22 +73,19 @@ function uiStateToCubeString(uiState) {
     .join('');
 }
 
-// cubejs string -> UI state object
 function cubeStringToUiState(str54) {
   if (!str54 || str54.length !== 54) throw new Error('Invalid cube string length');
-
   const out = { up: [], right: [], front: [], down: [], left: [], back: [] };
   let idx = 0;
   for (const face of CUBEJS_FACE_ORDER) {
     const block = str54.slice(idx, idx + 9).split('');
     const uiFace = CUBEJS_TO_UI_FACE[face];
-    out[uiFace] = block.map(letter => FACE_TO_COLOR[letter]); // convert face letters to colors
+    out[uiFace] = block.map(letter => FACE_TO_COLOR[letter]);
     idx += 9;
   }
   return out;
 }
 
-// --- Minimal renderer (unchanged) ---
 const CubeModel = ({ cubeState, spinning = false }) => {
   const COLORS = { W:'white', Y:'yellow', G:'green', B:'blue', R:'red', O:'orange' };
   return (
@@ -112,7 +104,7 @@ const CubeModel = ({ cubeState, spinning = false }) => {
 };
 
 function App() {
-  const [page, setPage] = useState('home'); // home, input, solution
+  const [page, setPage] = useState('home');
   const [cubeState, setCubeState] = useState(SOLVED_CUBE_STATE);
   const [activeColor, setActiveColor] = useState('W');
   const [error, setError] = useState('');
@@ -121,13 +113,12 @@ function App() {
   const [animState, setAnimState] = useState(null);
   const [animMoveIndex, setAnimMoveIndex] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
-  const animCubeRef = useRef(null);   // cubejs instance used for step-by-step animation
-  const initialCubeStringRef = useRef(''); // original string for reset
+  const animCubeRef = useRef(null);
+  const initialCubeStringRef = useRef('');
 
   const [isSolverReady, setIsSolverReady] = useState(false);
 
   useEffect(() => {
-    // initialize cubejs tables once
     Cube.initSolver();
     setIsSolverReady(true);
   }, []);
@@ -139,7 +130,7 @@ function App() {
   };
 
   const handleStickerClick = (face, index) => {
-    if (index === 4) return; // keep centers fixed
+    if (index === 4) return;
     setError('');
     setCubeState(prev => {
       const copy = JSON.parse(JSON.stringify(prev));
@@ -154,15 +145,12 @@ function App() {
       return;
     }
     try {
-      // Build cubejs string from UI and solve
       const cubeString = uiStateToCubeString(cubeState);
       initialCubeStringRef.current = cubeString;
-
       const cube = Cube.fromString(cubeString);
-      const sol = cube.solve();         // returns e.g., "U R U' L F2 ..."
+      const sol = cube.solve();
       const moves = sol ? sol.trim().split(/\s+/) : [];
 
-      // Prepare animation cube that will be advanced one move at a time
       animCubeRef.current = Cube.fromString(cubeString);
       setAnimState(JSON.parse(JSON.stringify(cubeState)));
       setAnimMoveIndex(-1);
@@ -172,19 +160,17 @@ function App() {
       setPage('solution');
     } catch (e) {
       console.error(e);
-      setError('Invalid cube configuration. Please check colors and piece counts.');
+      setError('Invalid cube configuration. Please check colors.');
     }
   };
 
-  // Convert inverse of a single move (for Prev button)
   const invertMove = (m) => {
-    if (m.endsWith("2")) return m;           // double move is its own inverse
-    if (m.endsWith("'")) return m.slice(0, -1);  // X' -> X
-    return m + "'";                           // X -> X'
+    if (m.endsWith("2")) return m;
+    if (m.endsWith("'")) return m.slice(0, -1);
+    return m + "'";
   };
 
   const syncAnimStateFromCube = () => {
-    // Read the current cubejs facelet string, convert to UI state, and render
     const str = animCubeRef.current.asString();
     const ui = cubeStringToUiState(str);
     setAnimState(ui);
@@ -216,7 +202,7 @@ function App() {
     if (!animCubeRef.current) return;
     if (animMoveIndex >= 0) {
       const lastMove = solutionMoves[animMoveIndex];
-      animCubeRef.current.move(invertMove(lastMove)); // step back
+      animCubeRef.current.move(invertMove(lastMove));
       syncAnimStateFromCube();
       setAnimMoveIndex(i => i - 1);
     }
@@ -230,7 +216,6 @@ function App() {
     setIsPlaying(false);
   };
 
-  // --- Render pages ---
   const renderPage = () => {
     const COLORS = { W:'#FFFFFF', Y:'#FFD500', G:'#009E60', B:'#0051BA', R:'#C41E3A', O:'#FF5800' };
 
@@ -239,8 +224,7 @@ function App() {
         return (
           <div className="page-container">
             <h1>Input Your Cube's Colors</h1>
-            <p>Select a color and paint the faces to match your cube (centers fixed).</p>
-
+            <p>Select a color and paint the faces to match your cube.</p>
             <div className="color-palette">
               {Object.entries(COLORS).map(([code, color]) => (
                 <button key={code}
@@ -249,7 +233,6 @@ function App() {
                         onClick={() => setActiveColor(code)} />
               ))}
             </div>
-
             <div className="cube-net">
               {UI_FACE_ORDER_FOR_RENDER.map(faceName => (
                 <div key={faceName} className={`input-face ${faceName}`}>
@@ -262,7 +245,6 @@ function App() {
                 </div>
               ))}
             </div>
-
             <div className="button-group">
               <button className="control-button" onClick={() => setPage('home')}>Back</button>
               <button className="solve-button" onClick={handleSolveClick}>Solve!</button>
@@ -282,7 +264,6 @@ function App() {
                   Move {animMoveIndex + 1} / {solutionMoves.length}:{" "}
                   <span>{animMoveIndex > -1 ? solutionMoves[animMoveIndex] : 'Start'}</span>
                 </div>
-
                 <div className="solution-controls">
                   <button className="control-button" onClick={handleResetAnim}>Reset</button>
                   <button className="control-button" onClick={handlePrev} disabled={animMoveIndex < 0}>Prev</button>
@@ -330,3 +311,4 @@ function App() {
 }
 
 export default App;
+
